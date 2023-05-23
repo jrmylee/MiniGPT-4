@@ -44,7 +44,7 @@ args = parse_args()
 cfg = Config(args)
 
 images = []
-questions = ["Are there dark clouds in the sky?", "Is it possible that this image was taken by a camera?", "Is the image blurry?", "If there are buildings in the image, do they look realistic?" ]
+questions = ["Are there dark clouds in the image?"]
 if args.dir:
     # walk through the directory and put all of the files into the images array
     for root, dirs, files in os.walk(args.dir):
@@ -68,35 +68,28 @@ print('Initialization Finished')
 responses = {}
 num_beams = 2
 temperature = 1
-for image in images:
-    print("NEXT IMAGE BABY \n\n\n\n")
-    img_list = []
-    chat_state = copy.deepcopy(CONV_VISION.copy())
-    chat.upload_img(image, chat_state, img_list)
-    post_image_chat_state = copy.deepcopy(chat_state)
-    responses[image] = {}
-    specific_dict = responses[image]
-    for question in questions:
-        print("NEXT QN UNHHHH \n\n\n\n")
-        chat.ask(question, chat_state)
+
+def ask_q(q):
+    for image in images:
+        img_list = []
+        chat_state = copy.deepcopy(CONV_VISION.copy())
+        chat.upload_img(image, chat_state, img_list)
+        post_image_chat_state = copy.deepcopy(chat_state)
+        responses[image] = {}
+        specific_dict = responses[image]
+
+        chat.ask(q, chat_state)
         llm_message = chat.answer(conv=chat_state,
                               img_list=img_list,
                               num_beams=num_beams,
                               temperature=temperature,
                               max_new_tokens=300,
                               max_length=2000)[0]
-        specific_dict[question] = llm_message
-        chat_state = post_image_chat_state
+        
+        print(image, llm_message)
 
-# write the dictionary into a csv
-# the csv will have the columns image, question, response
-import csv
-rows = []
-rows.append(["image", "question", "response"])
-for image in responses.keys():
-    for question in responses[image].keys():
-        rows.append([image, question, responses[image][question]])
-# write the rows into a csv
-with open('responses.csv', 'w') as f:
-    writer = csv.writer(f)
-    writer.writerows(rows)
+
+if __name__ == '__main__':
+    while True:
+        q = input('What do you want to ask? ')
+        ask_q(q) 
